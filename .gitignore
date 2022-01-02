@@ -1,5 +1,6 @@
 # Prerequisites
 *.d
+/Debug
 
 # Compiled Object files
 *.slo
@@ -30,3 +31,7 @@
 *.exe
 *.out
 *.app
+/.vs/fact/v16
+/core/Debug
+/core/x64/Debug/fact.tlog
+/core/x64/Debug
