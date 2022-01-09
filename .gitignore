@@ -31,7 +31,8 @@
 *.exe
 *.out
 *.app
-/.vs/fact/v16
-/core/Debug
-/core/x64/Debug/fact.tlog
-/core/x64/Debug
+
+/.vs
+/Debug
+/x64
+

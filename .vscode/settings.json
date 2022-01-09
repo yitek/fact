@@ -1,0 +1,62 @@
+{
+	
+"terminal.integrated.shell.windows": "C:\\cygwin64\\bin\\bash.exe",
+// 使得 cygwin 切换到当前工作目录
+"terminal.integrated.env.windows": {
+    "CHERE_INVOKING": "1"
+},
+// 使 cygwin 能够在 vscode 中正常使用 Shell 命令
+"terminal.integrated.shellArgs.windows": [
+    "-l"
+],
+	"files.associations": {
+		"iostream": "cpp",
+		"xstring": "cpp",
+		"ostream": "cpp",
+		"atomic": "cpp",
+		"bit": "cpp",
+		"cctype": "cpp",
+		"clocale": "cpp",
+		"cmath": "cpp",
+		"compare": "cpp",
+		"concepts": "cpp",
+		"cstddef": "cpp",
+		"cstdint": "cpp",
+		"cstdio": "cpp",
+		"cstdlib": "cpp",
+		"cstring": "cpp",
+		"ctime": "cpp",
+		"cwchar": "cpp",
+		"exception": "cpp",
+		"fstream": "cpp",
+		"initializer_list": "cpp",
+		"ios": "cpp",
+		"iosfwd": "cpp",
+		"istream": "cpp",
+		"iterator": "cpp",
+		"limits": "cpp",
+		"map": "cpp",
+		"memory": "cpp",
+		"new": "cpp",
+		"sstream": "cpp",
+		"stdexcept": "cpp",
+		"streambuf": "cpp",
+		"string": "cpp",
+		"system_error": "cpp",
+		"tuple": "cpp",
+		"type_traits": "cpp",
+		"typeinfo": "cpp",
+		"utility": "cpp",
+		"vector": "cpp",
+		"xfacet": "cpp",
+		"xiosbase": "cpp",
+		"xlocale": "cpp",
+		"xlocinfo": "cpp",
+		"xlocnum": "cpp",
+		"xmemory": "cpp",
+		"xstddef": "cpp",
+		"xtr1common": "cpp",
+		"xtree": "cpp",
+		"xutility": "cpp"
+	}
+}

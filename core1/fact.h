@@ -13,13 +13,14 @@ extern "C" {
 		fact_memory_free_t free;
 	}fact_memory;
 
-	typedef int (*fact_stream_write_t)(void* stream,void* buffer,size_t size);
-	typedef int (*fact_stream_read_t)(void* stream, void* buffer, size_t size);
+	typedef size_t (*fact_stream_write_t)(void* stream,void* buffer,size_t size);
+	typedef size_t(*fact_stream_read_t)(void* stream, void* buffer, size_t size);
 
 	typedef struct fact_Bind_t {
 		void* self;
 		void* method;
 	}fact_Bind;
+
 	typedef struct fact_link_t {
 		/// <summary>
 		/// 下一个节点指针
@@ -85,17 +86,17 @@ extern "C" {
 	fact_string* fact_string_make(const char* cstr, fact_string* str, size_t len);
 
 	int fact_string_compare(const fact_string* left, const fact_string* right);
-	inline int fact_string_serialize(fact_string* self, fact_Bind write) {
-		((fact_stream_write_t)write.method)(write.self, &self->length, sizeof(size_t));
-		((fact_stream_write_t)write.method)(write.self, self->data, self->length);
-		return 0;
+	inline size_t fact_string_store(fact_string* self, fact_Bind writer) {
+		size_t count = ((fact_stream_write_t)writer.method)(writer.self, &self->length, sizeof(size_t));
+		count+= ((fact_stream_write_t)writer.method)(writer.self, &self->data, self->length);
+		return count;
 	}
-	inline fact_string* fact_string_deserialize(fact_Bind read,fact_memory_alloc_t alloc) {
+	inline fact_string* fact_string_load(fact_Bind reader,fact_memory_alloc_t alloc) {
 		size_t length;
-		((fact_stream_read_t)read.method)(read.self, &length, sizeof(size_t));
+		((fact_stream_read_t)reader.method)(reader.self, &length, sizeof(size_t));
 		fact_string* str = (fact_string*)alloc(sizeof(size_t) + length + 1);
 		str->length = length;
-		((fact_stream_read_t)read.method)(read.self, str->data, length);
+		((fact_stream_read_t)reader.method)(reader.self, str->data, length);
 		*(str->data + length) = 0;
 		return str;
 	}
@@ -103,29 +104,65 @@ extern "C" {
 	/// <summary>
 	/// fact语言的类型元数据顶级对象
 	/// 所有类型类都是以这个类作为基类
+	/// Meta 元数据
+	/// |- fact_Type
+	/// | |- fact_Primary 基本数据 指令可以直接处理的byte,int等
+	/// | |- fact_Struct_t 结构体
+	/// | | |- fact_Class_t 类(存储在动态堆上的结构体)
+	/// | | |- fact_Delegate_t 函数代理，带着上下文
+	/// | |- fact_Pointer_t 指针
+	/// | | |- fact_Function_t 函数指针
+	/// | | |- fact_Reference_t 数据指针
+	/// | | |- fact_Virtual_t 虚函数指针
+	/// |- fact_Member
+	/// | |- fact_Field 字段
+	/// | |- fact_Method 方法
+	/// |- fact_Variable 变量
 	/// </summary>
-	struct fact_Type;
+	struct fact_Meta_t;
+	struct fact_Type_t;
+	struct fact_Pointer_t;
+	struct fact_Primary_t;
+	struct fact_Struct_t;
+	struct fact_Function_t;
+	struct fact_Reference_t;
+	struct fact_Callable_t;
+	struct fact_Variable_t;
+	struct fact_Class_t;
+	struct fact_Member_t;
+	struct fact_Field_t;
+	struct fact_Method_t;
+
+
+#define fact_MetaFlags_static 	1<<1	// 是否静态: 静态数据将在全局空间分配
+#define fact_MetaFlags_byref	1<<2	// 是否是引用(指针传递)
+
 	/// <summary>
 	/// fact中的class表示堆上分配的对象
 	/// 堆上分配的对象除了与fact_Struct一样有个type字段外,还有gcref字段
 	/// 用于垃圾回收
 	/// </summary>
 	typedef struct fact_Object_t {
-		struct fact_Type* meta;
+		struct fact_Type_t* meta;
+	} fact_Object;
+	struct VisualTable;
+	typedef struct fact_VisualObject_t {
+		struct fact_Object;
+		struct VisualTable* _vtbl;
 	} fact_Object;
 
-	typedef struct fact_Type_t {
-		struct fact_Object_t;
-		/// <summary>
-		/// 名称
-		/// </summary>
-		void* name;
+	typedef struct fact_Meta_t {
+		struct fact_VisualObject_t;
 		/// <summary>
 		/// 类型标记
 		/// 见 fact_TypeFlags_XX宏
 		/// </summary>
-		unsigned int type_flags;
-		size_t size;
+		unsigned int metaFlags;
+		/// <summary>
+		/// 名称
+		/// </summary>
+		void* name;
+		
 		/// <summary>
 		/// 类型上标注的属性
 		/// </summary>
@@ -134,31 +171,63 @@ extern "C" {
 		/// 该类型是泛型生成
 		/// 模板类型
 		/// </summary>
-		struct fact_Type_t* generatedBy;
+		struct fact_Meta_t* genBy;
 		/// <summary>
 		/// 泛型参数
 		/// </summary>
-		fact_array* genericArguments;
-	} fact_Type;
+		fact_array* generics;
+	} fact_Meta;
 	// 是否是原生数据: bool,byte,char,int,double,long,date,time,datetime,uuid,decimal,为原生
-#define fact_TypeFlags_static 1		// 是否静态: 静态数据将在全局空间分配
-#define fact_TypeFlags_func 1<<1		// 是否是函数
-#define fact_TypeFlags_byval 1<<2		// 是否传值: 传值数据将在栈上分配，其他的在动态堆上分配
-#define fact_TypeFlags_pointer 1<<3	// 是否是指针(数据指针)
-#define fact_TypeFlags_wrapper 1<<4	// 是否是包装器
-#define fact_TypeFlags_virtual 1<<5	// 是否有虚表
-#define fact_TypeFlags_generic 1<<6	// 是否是泛型
-#define fact_TypeFlags_function fact_TypeFlags_static|fact_TypeFlags_byval|fact_TypeFlags_func
-#define fact_TypeFlags_struct fact_TypeFlags_static|fact_TypeFlags_byval
-#define fact_TypeFlags_class fact_TypeFlags_static
+	
 
+	size_t fact_Meta_serialize(fact_Meta* self, fact_Bind writer);
+	void fact_Meta_deserialize(fact_Meta* self, fact_Bind reader, fact_memory_alloc_t alloc);
 
-	typedef struct fact_Func_t {
+	size_t fact_Meta_store(fact_Meta* self, fact_Bind writer) {
+		fact_Meta_serialize(self,writer);
+
+	}
+
+	typedef struct fact_Type_t {
+		struct fact_Meta_t;
+		size_t size;
+	} fact_Type;
+	fact_string* fact_Type_fullname(fact_Type* type) {
+		return type->name;
+	}
+	inline size_t fact_Type_serialize(fact_Type* self, fact_Bind writer) {
+		size_t count = fact_Meta_serialize(self,writer);
+		count += ((fact_stream_write_t)writer.method)(writer.self, &self->size, sizeof(size_t));
+		return count;
+	}
+	fact_Type* fact_Type_load(fact_Bind reader, fact_memory_alloc_t alloc) {
+		unsigned int flags;
+		((fact_stream_read_t)reader.method)(reader.self, &flags, sizeof(size_t));
+		fact_Type* type;
+		if (flags & fact_MetaFlags_callable) {
+
+		}else if (flags & fact_MetaFlags_class) {
+			
+		}
+		else if (flags & fact_MetaFlags_pointer) {
+			
+		}
+		if (type) fact_Meta_deserialize(type, reader, alloc);
+		return type;
+	}
+	typedef struct fact_Class_t {
+		struct fact_Type_t;
+		fact_array* members;
+	}fact_Class;
+	size_t fact_Class_serialize(fact_Class* self, fact_Bind writer);
+	void fact_Class_deserialize(fact_Class* self, fact_Bind reader, fact_memory_alloc_t alloc);
+
+	typedef struct fact_Callable_t {
 		struct fact_Type_t;
 		/// <summary>
-		/// 函数的种类
+		/// 函数的代码指针
 		/// </summary>
-		int func_flags;
+		void* address;
 		/// <summary>
 		/// 函数的返回值的类型
 		/// </summary>
@@ -166,40 +235,35 @@ extern "C" {
 		/// <summary>
 		/// 函数的参数
 		/// </summary>
-		fact_list argumentTypes;
-		/// <summary>
-		/// 函数的代码指针
-		/// </summary>
-		void* pointer;
-	} fact_Func;
-
-	typedef struct fact_Class_t {
+		fact_array argumentTypes;
+		
+	} fact_Callable;
+	typedef struct fact_Pointer_t {
 		struct fact_Type_t;
-		fact_array members;
-	}fact_Class;
+		fact_Type* underlayType;
+	}fact_Pointer;
+
+	
 
 	typedef struct fact_Member_t {
-		struct fact_Type_t;
-		int memberFlags;
+		struct fact_Meta_t;
 	}fact_Member;
-	#define fact_MemberFlags_field		1<<0
-	#define fact_MemberFlags_method		1<<1
-	#define fact_MemberFlags_accessor	1<<2
-	#define fact_MemberFlags_public		1<<8
-	#define fact_MemberFlags_friend		1<<9
-	#define fact_MemberFlags_projected	1<<10
-	#define fact_MemberFlags_private	1<<11
+
+	size_t fact_Member_serialize(fact_Member* self, fact_Bind writer) {}
+	void fact_Member_deserialize(fact_Member* self, fact_Bind reader, fact_memory_alloc_t alloc) {}
+
+	
 	
 
 	typedef struct fact_Field_t {
 		struct fact_Member_t;
-		fact_Type* fieldType;
+		fact_Meta* fieldType;
 
 	} fact_Field;
 
 	typedef struct fact_Method_t {
 		fact_Member;
-		fact_Func func;
+		fact_Callable func;
 	} fact_Method;
 
 	typedef struct fact_TypeBuilder_t {
@@ -208,8 +272,8 @@ extern "C" {
 		fact_list* members;
 	}fact_TypeBuilder;
 	fact_TypeBuilder* fact_TypeBuilder_createClass(fact_string* name,int flags, fact_memory_alloc_t alloc);
-	fact_Field* fact_TypeBuilder_createField(fact_TypeBuilder* self, fact_string* name, fact_Type* fieldType, int flags, fact_memory_alloc_t alloc);
-	void fact_TypeBuilder_serialize(fact_TypeBuilder* self, fact_Bind write);
+	fact_Field* fact_TypeBuilder_createField(fact_TypeBuilder* self, fact_string* name, fact_Meta* fieldType, int flags, fact_memory_alloc_t alloc);
+	size_t fact_TypeBuilder_serialize(fact_TypeBuilder* self, fact_Bind write);
 /*
 
 // fact语言的实例

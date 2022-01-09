@@ -15,18 +15,36 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="fact.c">
+    <ClCompile Include="mm.c">
       <Filter>源文件</Filter>
     </ClCompile>
     <ClCompile Include="main.c">
       <Filter>源文件</Filter>
     </ClCompile>
+    <ClCompile Include="gc.c">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="meta.c">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="base.c">
+      <Filter>源文件</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <None Include=".gitignore" />
-  </ItemGroup>
-  <ItemGroup>
-    <ClInclude Include="fact.h">
+    <ClInclude Include="mm.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="gc.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="meta.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="object.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="base.h">
       <Filter>头文件</Filter>
     </ClInclude>
   </ItemGroup>
