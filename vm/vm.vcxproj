@@ -149,9 +149,9 @@
   <ItemGroup>
     <ClInclude Include="base.h" />
     <ClInclude Include="gc.h" />
-    <ClInclude Include="meta.h" />
     <ClInclude Include="mm.h" />
     <ClInclude Include="object.h" />
+    <ClInclude Include="meta.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

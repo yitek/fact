@@ -1,0 +1,95 @@
+#include <malloc.h>
+#include "mm.h"
+#include "meta.h"
+
+size_t fact_meta_Type_deserialize(fact_meta_Type* self, fact_bind reader, fact_aquirem_t aquire) {
+	fact_meta_Meta_deserialize(self,reader,aquire);
+	// size
+	size_t count = ((fact_read_t)reader.method)(reader.self, &self->size, sizeof(size_t));
+	// fields
+	size_t fieldCount;
+	count += ((fact_read_t)reader.method)(reader.self, &fieldCount, sizeof(size_t));
+	if (fieldCount) {
+		self->fields = aquire(sizeof(fact_array) + sizeof(struct fact_meta_Field_t) * (fieldCount));
+		self->fields->length = fieldCount;
+		struct fact_meta_Field_t* pField = (struct fact_meta_Field_t*)&self->fields->data;
+		for (size_t i = 0; i < fieldCount; i++) {
+			pField->metaKind = fact_meta_Kinds_field;
+			fact_meta_Field_deserialize(pField, reader, aquire);
+			pField++;
+		}
+	}
+	// method
+	size_t methodCount;
+	count += ((fact_read_t)reader.method)(reader.self, &methodCount, sizeof(size_t));
+	if (methodCount) {
+		self->methods= aquire(sizeof(fact_array) + sizeof(struct fact_meta_Function_t) * (fieldCount));
+		self->methods->length = methodCount;
+		struct fact_meta_Function_t* pMethod = (struct fact_meta_Function_t*)&self->methods->data;
+		for (size_t i = 0; i < methodCount; i++) {
+			pMethod->metaKind = fact_meta_Kinds_field;
+			fact_meta_Function_deserialize(pMethod, reader, aquire);
+			pMethod++;
+		}
+	}
+
+	size_t genericCount;
+	count += ((fact_read_t)reader.method)(reader.self, &genericCount, sizeof(size_t));
+	if (genericCount) {
+		self->gerenics = aquire(sizeof(fact_array) + sizeof(struct fact_Meta_Type_t*) * (genericCount + 1));
+		// self->generics.
+	}
+}
+
+size_t fact_meta_Field_deserialize(fact_meta_Field* self, fact_bind reader, fact_aquirem_t aquire) {
+	size_t count = fact_meta_Meta_deserialize(self, reader, aquire);
+	fact_str* typeFullname = fact_str_load(reader, aquire,&count);
+	self->fieldType = fact_meta_loadType(typeFullname);
+	count += ((fact_read_t)reader.method)(reader.self, &self->offset, sizeof(size_t));
+	return count;
+}
+
+
+size_t fact_meta_Function_deserialize(struct fact_meta_Function_t* self, fact_bind reader, fact_aquirem_t aquire) {
+	size_t count = fact_meta_Type_deserialize(self, reader, aquire);
+	fact_str* typeFullname = fact_str_load(reader, aquire,&count);
+	self->returnType = fact_meta_loadType(typeFullname);
+	size_t argc;
+	count += ((fact_read_t)reader.method)(reader.self, &argc, sizeof(size_t));
+	if (argc) {
+		self->arguments = fact_array_create(argc, sizeof(fact_meta_Variable), aquire);
+		struct fact_meta_Variable_t* pVariable = (struct fact_meta_Variable_t*)&self->arguments->data;
+		for (size_t i = 0,j=self->arguments->length; i < j; i++) {
+			pVariable->metaKind = fact_meta_Kinds_variable;
+			fact_meta_Variable_deserialize(pVariable, reader, aquire);
+			pVariable++;
+		}
+	}
+	
+
+	return count;
+}
+
+
+size_t fact_meta_Variable_deserialize(struct fact_meta_Variable_t* self, fact_bind reader, fact_aquirem_t aquire) {
+	size_t count = fact_meta_Meta_deserialize(self, reader, aquire);
+	size_t strlen;
+	fact_str* typeFullname = fact_str_load(reader, aquire, &strlen);
+	count += strlen;
+	self->variableType = fact_meta_loadType(typeFullname);
+	count += ((fact_read_t)reader.method)(reader.self, &self->hasDefaultValue, sizeof(size_t));
+	if (self->variableType->size) {
+		
+	}
+	return count;
+}
+
+size_t fact_meta_Pointer_deserialize(struct fact_meta_Pointer_t* self, fact_bind reader, fact_aquirem_t aquire) {
+	size_t count = fact_meta_Type_deserialize(self, reader, aquire);
+	size_t strlen;
+	fact_str* typeFullname = fact_str_load(reader, aquire, &strlen);
+	count += strlen;
+	self->targetType = fact_meta_loadType(typeFullname);
+	return count;
+}
+

@@ -1,0 +1,28 @@
+{
+	// 使用 IntelliSense 了解相关属性。 
+	// 悬停以查看现有属性的描述。
+	// 欲了解更多信息，请访问: https://go.microsoft.com/fwlink/?linkid=830387
+	"version": "0.2.0",
+	"configurations": [
+		{
+			"name": "(gdb) 启动", //名称，将会出现在vscode调试器的选项中
+			"type": "cppdbg", //只能写cppdbg
+			"request": "launch", // lunch还是attach，我们是启动，用lunch
+			"program": "${workspaceFolder}/calc.exe", //要调试的程序
+			"args": [], // 传递给被调试程序的参数
+			"stopAtEntry": true, //程序运行到最后，终端会停止下来询问是否结束，而不会直接退出终端
+			"cwd": "${workspaceFolder}", //程序运行的环境目录，相当于cd cwd;exec program
+			"environment": [], //额外的环境变量
+			"externalConsole": true, //是否使用外部的控制台。
+			"MIMode": "gdb", //必须用这个值
+			"miDebuggerPath": "c:\\cygwin64\\bin\\gdb.exe", //gdb的位置
+			"setupCommands": [
+				{
+					"description": "为 gdb 启用整齐打印",
+					"text": "-enable-pretty-printing",
+					"ignoreFailures": true
+				}
+			]
+		}
+	]
+}

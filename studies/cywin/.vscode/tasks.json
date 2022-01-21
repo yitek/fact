@@ -1,0 +1,23 @@
+{ 
+	"version": "2.0.0",
+	"tasks":[
+		{
+			"label": "build-debug",// 标签，后面要用到
+			"isBackground": false, // 后台执行，否
+			"options": {
+				"cwd": "${workspaceFolder}" //当前执行的工作目录
+			},
+			"windows": {
+				"type":"cmd", //window下面执行cygwin-build.bat，这个脚本主要作用有2个:1 构建cygwin风格的build.sh的绝对路径；2 用cygwin bash去执行build.sh
+				"command": "${workspaceFolder}/build-scripts/cygwin-build.bat",
+				
+			},
+			"args":["w64","debug","executable"], //传递给构建脚本的参数，由于cmd只做了一次中转，最终执行还是build.sh,所有无论在linux还是在windows，其构建参数是一样的。
+			"problemMatcher": [],
+			"group": {
+				"kind": "build",
+				"isDefault": true
+			}
+		}
+	]
+}
